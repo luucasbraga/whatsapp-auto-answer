@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>whatsapp-auto-answer | Painel de Controle</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📱 whatsapp-auto-answer</h1>
+            <p class="subtitle">Painel de Controle</p>
+        </header>
+
+        <main>
+            <!-- Status Card -->
+            <div class="card status-card">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text" id="statusText">Verificando...</span>
+                </div>
+                <p class="phone-number" id="phoneNumber"></p>
+                <p class="last-update" id="lastUpdate"></p>
+            </div>
+
+            <!-- QR Code Card -->
+            <div class="card qr-card" id="qrCard">
+                <h2>Escaneie o QR Code</h2>
+                <p class="qr-instructions">Abra o WhatsApp no seu celular, vá em <strong>Dispositivos Conectados</strong> e escaneie o código abaixo:</p>
+                <div class="qr-container" id="qrContainer">
+                    <div class="qr-placeholder" id="qrPlaceholder">
+                        <div class="spinner"></div>
+                        <p>Gerando QR Code...</p>
+                    </div>
+                    <img id="qrImage" class="qr-image" alt="QR Code" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Connected Card -->
+            <div class="card connected-card" id="connectedCard" style="display: none;">
+                <div class="connected-icon">✅</div>
+                <h2>WhatsApp Conectado!</h2>
+                <p class="connected-phone" id="connectedPhone"></p>
+                <p class="connected-info">O bot está ativo e respondendo mensagens automaticamente.</p>
+                <button class="btn btn-danger" id="disconnectBtn">
+                    <span class="btn-icon">🔌</span>
+                    Desconectar
+                </button>
+            </div>
+
+            <!-- Loading Card -->
+            <div class="card loading-card" id="loadingCard" style="display: none;">
+                <div class="spinner large"></div>
+                <h2 id="loadingTitle">Conectando...</h2>
+                <p id="loadingMessage">Aguarde enquanto estabelecemos a conexão</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <!-- Error Card -->
+            <div class="card error-card" id="errorCard" style="display: none;">
+                <div class="error-icon">❌</div>
+                <h2>Erro de Conexão</h2>
+                <p id="errorMessage">Ocorreu um erro durante a conexão.</p>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <span class="btn-icon">🔄</span>
+                    Tentar Novamente
+                </button>
+            </div>
+        </main>
+
+        <footer>
+            <p>whatsapp-auto-answer v1.0.0</p>
+        </footer>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

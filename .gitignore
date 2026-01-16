@@ -1,0 +1,17 @@
+# Dependências
+node_modules/
+
+# Sessão do WhatsApp
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Variáveis de ambiente
+.env
+
+# Logs
+*.log
+logs/
+
+# Sistema
+.DS_Store
+Thumbs.db
