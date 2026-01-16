@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  whatsapp-bot:
+    build: .
+    container_name: whatsapp-auto-answer
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist WhatsApp session data
+      - ./data/.wwebjs_auth:/app/.wwebjs_auth
+      # Persist logs
+      - ./data/logs:/app/logs
+    environment:
+      # Application settings
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+
+      # Bot configuration
+      - BOT_NAME=Assistente Virtual
+      - WELCOME_DELAY_MS=1000
+      - SESSION_NAME=whatsapp-session
+
+      # Logging
+      - LOG_LEVEL=info
+
+    # Resource limits (adjust based on server capacity)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+        compress: "true"
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Network configuration
+    networks:
+      - whatsapp-network
+
+networks:
+  whatsapp-network:
+    driver: bridge

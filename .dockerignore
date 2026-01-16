@@ -1,0 +1,46 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# WhatsApp session data
+.wwebjs_auth
+.wwebjs_cache
+
+# Data directory
+data
+
+# Logs
+logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deployment
+deploy.sh
+README_DEPLOY.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation (optional - remove if you want to include in image)
+README.md

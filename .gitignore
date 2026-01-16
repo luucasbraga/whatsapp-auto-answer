@@ -12,6 +12,9 @@ node_modules/
 *.log
 logs/
 
+# Docker data directory
+data/
+
 # Sistema
 .DS_Store
 Thumbs.db
