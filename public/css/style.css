@@ -272,6 +272,15 @@ main {
     background: var(--danger-dark);
 }
 
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;

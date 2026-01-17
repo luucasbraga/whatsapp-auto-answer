@@ -163,6 +163,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Botão de logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            if (!confirm('Tem certeza que deseja sair?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                alert('Erro ao fazer logout: ' + error.message);
+            }
+        });
+    }
+
     // Buscar status inicial via API (fallback)
     fetch('/api/status')
         .then(res => res.json())
