@@ -35,7 +35,7 @@ To reply, simply send *the number* corresponding to your chosen option.
 
     error: '⚠️ An error occurred. Let\'s go back to the main menu.',
 
-    anythingElse: 'Is there anything else I can help you with?',
+    anythingElse: 'If you would like to discuss another matter, please type your message and we will respond as soon as possible.',
 
     infoNotFound: 'ℹ️ Information not available at the moment.',
 
