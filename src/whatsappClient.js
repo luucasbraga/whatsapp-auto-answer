@@ -4,7 +4,7 @@ import qrcode from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import { handleMessage } from './handlers/messageHandler.js';
 import { logger } from './utils/logger.js';
-import { cleanLockfile, cleanSessionFolder } from './utils/lockfileHelper.js';
+import { cleanLockfile, cleanSessionFolder, waitForFileRelease } from './utils/lockfileHelper.js';
 
 let clientInstance = null;
 let ioInstance = null;
@@ -97,14 +97,19 @@ export async function initializeWhatsAppClient(io) {
         connectedPhone = null;
         currentQrCode = null;
 
-        // Se for um LOGOUT, tentar limpar o lockfile
+        // Se for um LOGOUT, aguardar e limpar arquivos de sessão
         if (reason === 'LOGOUT') {
             try {
                 const sessionName = process.env.SESSION_NAME || 'whatsapp-session';
-                logger.info('Tentando limpar lockfile após logout...');
-                await cleanLockfile(sessionName);
+                logger.info('Logout detectado, aguardando liberação de arquivos...');
+
+                // Aguardar processos liberarem os arquivos
+                await waitForFileRelease(3000);
+
+                // Tentar limpar a sessão completamente
+                await cleanSessionFolder(sessionName);
             } catch (error) {
-                logger.error('Erro ao limpar lockfile:', error);
+                logger.error('Erro ao limpar sessão após logout:', error);
             }
         }
 
@@ -158,19 +163,34 @@ export async function disconnectClient() {
         const sessionName = process.env.SESSION_NAME || 'whatsapp-session';
 
         try {
-            await clientInstance.logout();
+            // Primeiro, destruir o cliente para fechar o Chromium/Puppeteer
+            logger.info('Destruindo cliente para liberar recursos...');
+            await clientInstance.destroy();
+
+            // Aguardar para que todos os processos liberem os arquivos
+            logger.info('Aguardando liberação de locks de arquivo...');
+            await waitForFileRelease(5000);
+
+            // Agora limpar manualmente a pasta de sessão
+            logger.info('Limpando pasta de sessão...');
+            await cleanSessionFolder(sessionName);
+
+            logger.info('✅ Logout concluído com sucesso');
         } catch (error) {
             logger.error('Erro durante logout:', error);
 
-            // Tentar limpar o lockfile manualmente
-            if (error.message && error.message.includes('EBUSY')) {
-                logger.info('Tentando limpar lockfile manualmente...');
-                await cleanLockfile(sessionName);
+            // Tentar limpar de qualquer forma
+            try {
+                await waitForFileRelease(3000);
+                await cleanSessionFolder(sessionName);
+            } catch (cleanupError) {
+                logger.error('Erro ao limpar sessão:', cleanupError);
             }
         }
 
         connectionStatus = 'disconnected';
         connectedPhone = null;
+        clientInstance = null;
         emitStatus();
         return true;
     }
