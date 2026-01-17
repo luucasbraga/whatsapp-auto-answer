@@ -2,31 +2,33 @@ export const messages = {
     welcome: (userName) => `
 Hello, *${userName}*! 👋
 
-Thank you for contacting Rica Casa. We’ve received your message and will get back to you as soon as possible.
+Thank you for contacting *Rica Casa*. We’ve received your message and will get back to you as soon as possible.
 
-Please feel free to share any details or questions about how we can assist you. In our catalogue, you’ll find houses available for rent. 🏠
+Please feel free to share any details or questions about how we can assist you. In *our catalogue*, you\'ll find houses available for rent. 🏠
     `.trim(),
 
     mainMenu: `
-*1-* 📅 Instant booking
+*How can we help you today?*
+
+*1-* Instant booking
 _I want to book now_
 
-*2-* ⏰ Early check-in / Late check-out
+*2-* Early check-in / Late check-out
 _Check availability_
 
-*3-* 🎉 Special occasion
+*3-* Special occasion
 _Let us know if you're celebrating something special_
 
-*4-* 🚗 Parking information
+*4-* Parking information
 _Parking details and availability_
 
-*5-* ✏️ Change my reservation
+*5-* Change my reservation
 _I need to modify my booking_
 
-*6-* ❓ I have a question
+*6-* I have a question
 _I have another enquiry_
 
-To reply, simply send the number corresponding to your chosen option.
+To reply, simply send *the number* corresponding to your chosen option.
     `.trim(),
 
     invalidOption: '❌ Invalid option. Please send only the *number* of the option you want.',
