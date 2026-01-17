@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { getConnectionStatus, disconnectClient } from './whatsappClient.js';
+import { getConnectionStatus, disconnectClient, resetSession } from './whatsappClient.js';
 import { logger } from './utils/logger.js';
 import crypto from 'crypto';
 
@@ -136,6 +136,17 @@ export async function startWebServer() {
         }
     });
 
+    // API: Resetar sessão (limpa completamente a sessão do WhatsApp)
+    app.post('/api/reset-session', async (req, res) => {
+        try {
+            const result = await resetSession();
+            res.json({ success: result, message: result ? 'Sessão resetada com sucesso. Reinicie a aplicação.' : 'Cliente não estava conectado' });
+        } catch (error) {
+            logger.error('Erro ao resetar sessão:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    });
+
     // Socket.IO: Middleware de autenticação
     io.use((socket, next) => {
         const cookie = socket.handshake.headers.cookie;
@@ -160,6 +171,16 @@ export async function startWebServer() {
         socket.on('disconnect-whatsapp', async () => {
             try {
                 await disconnectClient();
+            } catch (error) {
+                socket.emit('error', { message: error.message });
+            }
+        });
+
+        // Requisição de reset de sessão via socket
+        socket.on('reset-session', async () => {
+            try {
+                await resetSession();
+                socket.emit('session-reset', { message: 'Sessão resetada com sucesso' });
             } catch (error) {
                 socket.emit('error', { message: error.message });
             }
