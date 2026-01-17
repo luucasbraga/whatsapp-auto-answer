@@ -9,6 +9,7 @@ let clientInstance = null;
 let ioInstance = null;
 let connectionStatus = 'disconnected';
 let connectedPhone = null;
+let currentQrCode = null;
 
 export async function initializeWhatsAppClient(io) {
     ioInstance = io;
@@ -49,6 +50,7 @@ export async function initializeWhatsAppClient(io) {
                     light: '#ffffff'
                 }
             });
+            currentQrCode = qrDataURL;
             emitStatus({ qrCode: qrDataURL });
         } catch (err) {
             logger.error('Erro ao gerar QR Code:', err);
@@ -59,6 +61,7 @@ export async function initializeWhatsAppClient(io) {
     client.on('ready', async () => {
         logger.info('✅ WhatsApp conectado e pronto!');
         connectionStatus = 'connected';
+        currentQrCode = null; // Limpar QR code após conexão
 
         try {
             const info = client.info;
@@ -75,6 +78,7 @@ export async function initializeWhatsAppClient(io) {
     client.on('authenticated', () => {
         logger.info('🔐 Autenticação bem-sucedida!');
         connectionStatus = 'authenticated';
+        currentQrCode = null; // Limpar QR code após autenticação
         emitStatus();
     });
 
@@ -90,6 +94,7 @@ export async function initializeWhatsAppClient(io) {
         logger.warn('⚠️ Cliente desconectado:', reason);
         connectionStatus = 'disconnected';
         connectedPhone = null;
+        currentQrCode = null;
         emitStatus({ reason });
     });
 
@@ -121,10 +126,17 @@ export function getClient() {
 }
 
 export function getConnectionStatus() {
-    return {
+    const statusObj = {
         status: connectionStatus,
         phone: connectedPhone
     };
+
+    // Incluir QR code se disponível
+    if (currentQrCode) {
+        statusObj.qrCode = currentQrCode;
+    }
+
+    return statusObj;
 }
 
 export async function disconnectClient() {
