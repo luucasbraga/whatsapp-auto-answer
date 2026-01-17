@@ -41,17 +41,18 @@ async function sendWelcomeMessage(client, message, userName) {
     const welcomeText = messages.welcome(userName);
 
     try {
-        // Send welcome message
-        await client.sendMessage(message.from, welcomeText);
+        // Send welcome message with sendSeen option disabled to avoid markedUnread error
+        await client.sendMessage(message.from, welcomeText, { sendSeen: false });
 
         // Small delay before menu
         await delay(parseInt(process.env.WELCOME_DELAY_MS) || 1000);
 
         // Send menu options
-        await client.sendMessage(message.from, messages.mainMenu);
+        await client.sendMessage(message.from, messages.mainMenu, { sendSeen: false });
     } catch (error) {
         logger.error('Erro ao enviar mensagem de boas-vindas:', error);
-        throw error;
+        // Don't rethrow - log and continue to prevent app crash
+        return;
     }
 }
 
@@ -62,7 +63,7 @@ async function processUserResponse(client, message, session, userMessage, origin
         // Option to return to main menu from any state
         if (userMessage === '0' || userMessage === 'back' || userMessage === 'menu') {
             sessionService.updateState(userId, 'MAIN_MENU');
-            await client.sendMessage(userId, messages.mainMenu);
+            await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
             return;
         }
 
@@ -78,17 +79,18 @@ async function processUserResponse(client, message, session, userMessage, origin
             case 'TALK_TO_HUMAN':
                 // Forward message to human / log for later review
                 logger.info(`💬 Guest message (awaiting human): ${originalMessage}`);
-                await client.sendMessage(userId, messages.waitingForHuman);
+                await client.sendMessage(userId, messages.waitingForHuman, { sendSeen: false });
                 break;
 
             default:
-                await client.sendMessage(userId, messages.invalidOption);
-                await client.sendMessage(userId, messages.mainMenu);
+                await client.sendMessage(userId, messages.invalidOption, { sendSeen: false });
+                await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
                 sessionService.updateState(userId, 'MAIN_MENU');
         }
     } catch (error) {
         logger.error('Erro ao processar resposta do usuário:', error);
-        throw error;
+        // Don't rethrow - prevent app crash
+        return;
     }
 }
 
@@ -98,8 +100,8 @@ async function handleMainMenuSelection(client, message, session, userMessage) {
 
     try {
         if (isNaN(option) || option < 1 || option > menuOptions.main.length) {
-            await client.sendMessage(userId, messages.invalidOption);
-            await client.sendMessage(userId, messages.mainMenu);
+            await client.sendMessage(userId, messages.invalidOption, { sendSeen: false });
+            await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
             return;
         }
 
@@ -110,7 +112,8 @@ async function handleMainMenuSelection(client, message, session, userMessage) {
         await executeAction(client, message, session, selectedOption);
     } catch (error) {
         logger.error('Erro ao processar seleção do menu:', error);
-        throw error;
+        // Don't rethrow - prevent app crash
+        return;
     }
 }
 
@@ -123,19 +126,20 @@ async function handleUserInput(client, message, session, originalMessage) {
         logger.info(`📝 Guest input (${inputType}): ${originalMessage}`);
 
         // Send confirmation message
-        await client.sendMessage(userId, messages.messageReceived);
+        await client.sendMessage(userId, messages.messageReceived, { sendSeen: false });
 
         await delay(500);
 
         // Ask if they need anything else
-        await client.sendMessage(userId, messages.anythingElse);
-        await client.sendMessage(userId, messages.mainMenu);
+        await client.sendMessage(userId, messages.anythingElse, { sendSeen: false });
+        await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
 
         // Return to main menu
         sessionService.updateState(userId, 'MAIN_MENU');
     } catch (error) {
         logger.error('Erro ao processar input do usuário:', error);
-        throw error;
+        // Don't rethrow - prevent app crash
+        return;
     }
 }
 
@@ -149,10 +153,10 @@ async function executeAction(client, message, session, option) {
                 const responseKey = option.response;
                 const responseText = messages[responseKey] || messages.infoNotFound;
 
-                await client.sendMessage(userId, responseText);
+                await client.sendMessage(userId, responseText, { sendSeen: false });
                 await delay(500);
-                await client.sendMessage(userId, messages.anythingElse);
-                await client.sendMessage(userId, messages.mainMenu);
+                await client.sendMessage(userId, messages.anythingElse, { sendSeen: false });
+                await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
                 sessionService.updateState(userId, 'MAIN_MENU');
                 break;
 
@@ -161,8 +165,8 @@ async function executeAction(client, message, session, option) {
                 const promptKey = option.response;
                 const promptText = messages[promptKey] || messages.requestDetails;
 
-                await client.sendMessage(userId, promptText);
-                await client.sendMessage(userId, messages.backToMenu);
+                await client.sendMessage(userId, promptText, { sendSeen: false });
+                await client.sendMessage(userId, messages.backToMenu, { sendSeen: false });
 
                 sessionService.updateState(userId, 'AWAITING_INPUT', {
                     inputType: option.inputType,
@@ -171,18 +175,19 @@ async function executeAction(client, message, session, option) {
                 break;
 
             case 'TRANSFER_TO_HUMAN':
-                await client.sendMessage(userId, messages.transferToHuman);
+                await client.sendMessage(userId, messages.transferToHuman, { sendSeen: false });
                 sessionService.updateState(userId, 'TALK_TO_HUMAN');
                 break;
 
             default:
-                await client.sendMessage(userId, messages.featureNotAvailable);
-                await client.sendMessage(userId, messages.mainMenu);
+                await client.sendMessage(userId, messages.featureNotAvailable, { sendSeen: false });
+                await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
                 sessionService.updateState(userId, 'MAIN_MENU');
         }
     } catch (error) {
         logger.error('Erro ao executar ação:', error);
-        throw error;
+        // Don't rethrow - prevent app crash
+        return;
     }
 }
 
