@@ -4,6 +4,7 @@ import qrcode from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import { handleMessage } from './handlers/messageHandler.js';
 import { logger } from './utils/logger.js';
+import { cleanLockfile, cleanSessionFolder } from './utils/lockfileHelper.js';
 
 let clientInstance = null;
 let ioInstance = null;
@@ -90,11 +91,23 @@ export async function initializeWhatsAppClient(io) {
     });
 
     // Evento: Desconectado
-    client.on('disconnected', (reason) => {
+    client.on('disconnected', async (reason) => {
         logger.warn('⚠️ Cliente desconectado:', reason);
         connectionStatus = 'disconnected';
         connectedPhone = null;
         currentQrCode = null;
+
+        // Se for um LOGOUT, tentar limpar o lockfile
+        if (reason === 'LOGOUT') {
+            try {
+                const sessionName = process.env.SESSION_NAME || 'whatsapp-session';
+                logger.info('Tentando limpar lockfile após logout...');
+                await cleanLockfile(sessionName);
+            } catch (error) {
+                logger.error('Erro ao limpar lockfile:', error);
+            }
+        }
+
         emitStatus({ reason });
     });
 
@@ -142,10 +155,49 @@ export function getConnectionStatus() {
 export async function disconnectClient() {
     if (clientInstance) {
         logger.info('Desconectando cliente WhatsApp...');
-        await clientInstance.logout();
+        const sessionName = process.env.SESSION_NAME || 'whatsapp-session';
+
+        try {
+            await clientInstance.logout();
+        } catch (error) {
+            logger.error('Erro durante logout:', error);
+
+            // Tentar limpar o lockfile manualmente
+            if (error.message && error.message.includes('EBUSY')) {
+                logger.info('Tentando limpar lockfile manualmente...');
+                await cleanLockfile(sessionName);
+            }
+        }
+
         connectionStatus = 'disconnected';
         connectedPhone = null;
         emitStatus();
+        return true;
+    }
+    return false;
+}
+
+export async function resetSession() {
+    if (clientInstance) {
+        logger.info('Resetando sessão WhatsApp...');
+        const sessionName = process.env.SESSION_NAME || 'whatsapp-session';
+
+        try {
+            // Tentar desconectar primeiro
+            await clientInstance.destroy();
+        } catch (error) {
+            logger.error('Erro ao destruir cliente:', error);
+        }
+
+        // Limpar a pasta de sessão completamente
+        await cleanSessionFolder(sessionName);
+
+        connectionStatus = 'disconnected';
+        connectedPhone = null;
+        currentQrCode = null;
+        clientInstance = null;
+        emitStatus();
+
         return true;
     }
     return false;
