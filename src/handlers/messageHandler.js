@@ -132,10 +132,9 @@ async function handleUserInput(client, message, session, originalMessage) {
 
         // Ask if they need anything else
         await client.sendMessage(userId, messages.anythingElse, { sendSeen: false });
-        await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
 
-        // Return to main menu
-        sessionService.updateState(userId, 'MAIN_MENU');
+        // Change state to wait for human
+        sessionService.updateState(userId, 'TALK_TO_HUMAN');
     } catch (error) {
         logger.error('Erro ao processar input do usuário:', error);
         // Don't rethrow - prevent app crash
@@ -156,8 +155,7 @@ async function executeAction(client, message, session, option) {
                 await client.sendMessage(userId, responseText, { sendSeen: false });
                 await delay(500);
                 await client.sendMessage(userId, messages.anythingElse, { sendSeen: false });
-                await client.sendMessage(userId, messages.mainMenu, { sendSeen: false });
-                sessionService.updateState(userId, 'MAIN_MENU');
+                sessionService.updateState(userId, 'TALK_TO_HUMAN');
                 break;
 
             case 'REQUEST_INPUT':
