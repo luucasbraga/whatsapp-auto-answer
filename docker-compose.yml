@@ -18,6 +18,11 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
 
+      # Autenticação
+      - ADMIN_EMAIL=marianamara@admin.com
+      - ADMIN_PASSWORD=//EuAmo@LucasBraga//
+
+
       # Bot configuration
       - BOT_NAME=Assistente Virtual
       - WELCOME_DELAY_MS=1000
