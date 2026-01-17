@@ -2,9 +2,9 @@ export const messages = {
     welcome: (userName) => `
 Hello, *${userName}*! 👋
 
-Welcome to our guest support service.
+Thank you for contacting Rica Casa. We’ve received your message and will get back to you as soon as possible.
 
-How can we help you today?
+Please feel free to share any details or questions about how we can assist you. In our catalogue, you’ll find houses available for rent. 🏠
     `.trim(),
 
     mainMenu: `
