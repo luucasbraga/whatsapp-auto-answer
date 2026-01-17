@@ -12,8 +12,20 @@ let connectionStatus = 'disconnected';
 let connectedPhone = null;
 let currentQrCode = null;
 
-export async function initializeWhatsAppClient(io) {
+export async function initializeWhatsAppClient(io, retryAttempt = 0) {
     ioInstance = io;
+
+    // Se for uma retry após falha, tentar limpar sessão corrompida
+    if (retryAttempt > 0) {
+        logger.info('Verificando sessão após falha...');
+        const sessionName = process.env.SESSION_NAME || 'whatsapp-session';
+        try {
+            // Pequeno delay para garantir que recursos foram liberados
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+            logger.warn('Erro ao verificar sessão:', error.message);
+        }
+    }
 
     const client = new Client({
         authStrategy: new LocalAuth({
@@ -28,8 +40,26 @@ export async function initializeWhatsAppClient(io) {
                 '--disable-accelerated-2d-canvas',
                 '--no-first-run',
                 '--no-zygote',
-                '--disable-gpu'
-            ]
+                '--disable-gpu',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-extensions',
+                '--disable-software-rasterizer',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--disable-ipc-flooding-protection',
+                '--enable-features=NetworkService,NetworkServiceInProcess'
+            ],
+            handleSIGINT: false,
+            handleSIGTERM: false,
+            handleSIGHUP: false,
+            timeout: 60000
+        },
+        webVersionCache: {
+            type: 'remote',
+            remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
         }
     });
 
@@ -90,6 +120,17 @@ export async function initializeWhatsAppClient(io) {
         emitStatus({ error: message });
     });
 
+    // Evento: Erro de mudança de estado
+    client.on('change_state', (state) => {
+        logger.info(`Mudança de estado: ${state}`);
+    });
+
+    // Capturar erros não tratados do cliente
+    client.on('error', (error) => {
+        logger.error('Erro no cliente WhatsApp:', error);
+        // Não mudar o status aqui para não interferir com outros eventos
+    });
+
     // Evento: Desconectado
     client.on('disconnected', async (reason) => {
         logger.warn('⚠️ Cliente desconectado:', reason);
@@ -132,11 +173,51 @@ export async function initializeWhatsAppClient(io) {
         }
     });
 
-    // Iniciar cliente
-    client.initialize();
-    clientInstance = client;
+    // Evento: Erro remoto de sessão
+    client.on('remote_session_saved', () => {
+        logger.info('Sessão remota salva com sucesso');
+    });
 
-    return client;
+    // Iniciar cliente com retry logic
+    const maxRetries = 3;
+
+    try {
+        logger.info(`Tentativa ${retryAttempt + 1} de ${maxRetries} de inicializar cliente...`);
+        await client.initialize();
+        logger.info('✅ Cliente inicializado com sucesso');
+        clientInstance = client;
+        return client;
+    } catch (error) {
+        logger.error(`❌ Erro ao inicializar cliente (tentativa ${retryAttempt + 1}/${maxRetries}):`, error.message);
+
+        // Se ainda temos tentativas restantes, fazer retry
+        if (retryAttempt < maxRetries - 1) {
+            const delay = Math.pow(2, retryAttempt + 1) * 1000; // Exponential backoff: 2s, 4s, 8s
+            logger.info(`⏳ Aguardando ${delay / 1000}s antes de tentar novamente...`);
+
+            // Tentar limpar recursos antes de retry
+            try {
+                await client.destroy();
+                logger.info('Cliente anterior destruído');
+            } catch (destroyError) {
+                logger.warn('Aviso ao destruir cliente:', destroyError.message);
+            }
+
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            // Recriar o cliente para a próxima tentativa
+            logger.info('🔄 Recriando cliente para nova tentativa...');
+            return initializeWhatsAppClient(io, retryAttempt + 1);
+        } else {
+            // Esgotamos todas as tentativas
+            logger.error('💥 Falha ao inicializar cliente após todas as tentativas');
+            logger.error('Possíveis soluções:');
+            logger.error('1. Verificar se há processos Chrome/Chromium travados');
+            logger.error('2. Limpar a pasta .wwebjs_auth manualmente');
+            logger.error('3. Reiniciar o sistema');
+            throw error;
+        }
+    }
 }
 
 export function getClient() {
